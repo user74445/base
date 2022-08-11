@@ -1,387 +1,200 @@
 
-# Домашнее задание к занятию "6.2. SQL"
+
+# Домашнее задание к занятию "6.3. MySQL"
 
 ## Задача 1
 
 <details><summary>.</summary>
 
-> Используя docker поднимите инстанс PostgreSQL (версию 12) c 2 volume, 
-> в который будут складываться данные БД и бэкапы.
+> Используя docker поднимите инстанс MySQL (версию 8). Данные БД сохраните в volume.
 > 
-> Приведите получившуюся команду или docker-compose манифест.
+> Изучите [бэкап БД](https://github.com/netology-code/virt-homeworks/tree/master/06-db-03-mysql/test_data) и 
+> восстановитесь из него.
+> 
+> Перейдите в управляющую консоль `mysql` внутри контейнера.
+> 
+> Используя команду `\h` получите список управляющих команд.
+> 
+> Найдите команду для выдачи статуса БД и **приведите в ответе** из ее вывода версию сервера БД.
+> 
+> Подключитесь к восстановленной БД и получите список таблиц из этой БД.
+> 
+> **Приведите в ответе** количество записей с `price` > 300.
+> 
+> В следующих заданиях мы будем продолжать работу с данным контейнером.
 
 </details>
 
-`docker-compose.yaml`
-```yaml
-version: '3.6'
+### Используя docker поднимите инстанс MySQL (версию 8). Данные БД сохраните в volume.
 
-volumes:
-  data: {}
-  backup: {}
-
-services:
-
-  postgres:
-    image: postgres:12
-    container_name: psql
-    ports:
-      - "0.0.0.0:5432:5432"
-    volumes:
-      - data:/var/lib/postgresql/data
-      - backup:/media/postgresql/backup
-    environment:
-      POSTGRES_USER: "test-admin-user"
-      POSTGRES_PASSWORD: "netology"
-      POSTGRES_DB: "test_db"
-    restart: always
-```
-Старт
 ```bash
-docker-compose up -d
-export PGPASSWORD=netology && psql -h localhost -U test-admin-user test_db
+docker run --rm --name my \
+    -e MYSQL_DATABASE=test_db \
+    -e MYSQL_ROOT_PASSWORD=netology \
+    -v $PWD/backup:/media/mysql/backup \
+    -v my_data:/var/lib/mysql \
+    -v $PWD/config/conf.d:/etc/mysql/conf.d \
+    -p 13306:3306 \
+    -d mysql:8
+```
+
+### Найдите команду для выдачи статуса БД и **приведите в ответе** из ее вывода версию сервера БД
+
+```sql
+mysql> \s
+...
+Server version:         8.0.27 MySQL Community Server - GPL
+...
+```
+
+### **Приведите в ответе** количество записей с `price` > 300.
+
+```sql
+mysql> select count(*) from orders where price > 300;
++----------+
+| count(*) |
++----------+
+|        1 |
++----------+
+1 row in set (0.00 sec)
 ```
 
 ## Задача 2
 
 <details><summary>.</summary>
 
-> В БД из задачи 1: 
-> - создайте пользователя test-admin-user и БД test_db
-> - в БД test_db создайте таблицу orders и clients (спeцификация таблиц ниже)
-> - предоставьте привилегии на все операции пользователю test-admin-user на таблицы БД test_db
-> - создайте пользователя test-simple-user  
-> - предоставьте пользователю test-simple-user права на SELECT/INSERT/UPDATE/DELETE данных таблиц БД test_db
+> Создайте пользователя test в БД c паролем test-pass, используя:
+> - плагин авторизации mysql_native_password
+> - срок истечения пароля - 180 дней 
+> - количество попыток авторизации - 3 
+> - максимальное количество запросов в час - 100
+> - аттрибуты пользователя:
+>     - Фамилия "Pretty"
+>     - Имя "James"
 > 
-> Таблица orders:
-> - id (serial primary key)
-> - наименование (string)
-> - цена (integer)
-> 
-> Таблица clients:
-> - id (serial primary key)
-> - фамилия (string)
-> - страна проживания (string, index)
-> - заказ (foreign key orders)
-> 
-> Приведите:
-> - итоговый список БД после выполнения пунктов выше,
-> - описание таблиц (describe)
-> - SQL-запрос для выдачи списка пользователей с правами над таблицами test_db
-> - список пользователей с правами над таблицами test_db
+> Предоставьте привелегии пользователю `test` на операции SELECT базы `test_db`.
+>     
+> Используя таблицу INFORMATION_SCHEMA.USER_ATTRIBUTES получите данные по пользователю `test` и 
+> **приведите в ответе к задаче**.
 
 </details>
 
-### Итоговый список БД после выполнения пунктов выше
+### Создайте пользователя test в БД c паролем test-pass
 
-```
-test_db=# \l
-
-                                             List of databases
-   Name    |      Owner      | Encoding |  Collate   |   Ctype    |            Access privileges
------------+-----------------+----------+------------+------------+-----------------------------------------
- postgres  | test-admin-user | UTF8     | en_US.utf8 | en_US.utf8 |
- template0 | test-admin-user | UTF8     | en_US.utf8 | en_US.utf8 | =c/"test-admin-user"                   +
-           |                 |          |            |            | "test-admin-user"=CTc/"test-admin-user"
- template1 | test-admin-user | UTF8     | en_US.utf8 | en_US.utf8 | =c/"test-admin-user"                   +
-           |                 |          |            |            | "test-admin-user"=CTc/"test-admin-user"
- test_db   | test-admin-user | UTF8     | en_US.utf8 | en_US.utf8 | =Tc/"test-admin-user"                  +
-           |                 |          |            |            | "test-admin-user"=CTc/"test-admin-user"
-(4 rows)
+```sql 
+CREATE USER 'test'@'localhost' 
+    IDENTIFIED WITH mysql_native_password BY 'test-pass'
+    WITH MAX_CONNECTIONS_PER_HOUR 100
+    PASSWORD EXPIRE INTERVAL 180 DAY
+    FAILED_LOGIN_ATTEMPTS 3 PASSWORD_LOCK_TIME 2
+    ATTRIBUTE '{"first_name":"James", "last_name":"Pretty"}';
 ```
 
-### Описание таблиц (describe)
-
-`clients`
-```
-test_db=# \d clients
-
-                                         Table "public.clients"
-      Column       |          Type          | Collation | Nullable |               Default
--------------------+------------------------+-----------+----------+-------------------------------------
- id                | integer                |           | not null | nextval('clients_id_seq'::regclass)
- фамилия           | character varying(150) |           |          |
- страна проживания | character varying(150) |           |          |
- заказ             | integer                |           |          |
-Indexes:
-    "clients_pkey" PRIMARY KEY, btree (id)
-Foreign-key constraints:
-    "clients_заказ_fkey" FOREIGN KEY ("заказ") REFERENCES orders(id)
-```
-`orders`
-```
-test_db=# \d orders
-
-                                       Table "public.orders"
-    Column    |          Type          | Collation | Nullable |              Default
---------------+------------------------+-----------+----------+------------------------------------
- id           | integer                |           | not null | nextval('orders_id_seq'::regclass)
- наименование | character varying(150) |           |          |
- цена         | integer                |           |          |
-Indexes:
-    "orders_pkey" PRIMARY KEY, btree (id)
-Referenced by:
-    TABLE "clients" CONSTRAINT "clients_заказ_fkey" FOREIGN KEY ("заказ") REFERENCES orders(id)
-```
-
-### SQL-запрос для выдачи списка пользователей с правами над таблицами test_db
+### Предоставьте привелегии пользователю `test` на операции SELECT базы `test_db`
 
 ```sql
-SELECT 
-    grantee, table_name, privilege_type 
-FROM 
-    information_schema.table_privileges 
-WHERE 
-    grantee in ('test-admin-user','test-simple-user')
-    and table_name in ('clients','orders')
-order by 
-    1,2,3;
+grant select on test_db.* to test;
 ```
 
-### Список пользователей с правами над таблицами test_db
+### Используя таблицу INFORMATION_SCHEMA.USER_ATTRIBUTES получите данные по пользователю `test`
 
-```
-     grantee      | table_name | privilege_type
-------------------+------------+----------------
- test-admin-user  | clients    | DELETE
- test-admin-user  | clients    | INSERT
- test-admin-user  | clients    | REFERENCES
- test-admin-user  | clients    | SELECT
- test-admin-user  | clients    | TRIGGER
- test-admin-user  | clients    | TRUNCATE
- test-admin-user  | clients    | UPDATE
- test-admin-user  | orders     | DELETE
- test-admin-user  | orders     | INSERT
- test-admin-user  | orders     | REFERENCES
- test-admin-user  | orders     | SELECT
- test-admin-user  | orders     | TRIGGER
- test-admin-user  | orders     | TRUNCATE
- test-admin-user  | orders     | UPDATE
- test-simple-user | clients    | DELETE
- test-simple-user | clients    | INSERT
- test-simple-user | clients    | SELECT
- test-simple-user | clients    | UPDATE
- test-simple-user | orders     | DELETE
- test-simple-user | orders     | INSERT
- test-simple-user | orders     | SELECT
- test-simple-user | orders     | UPDATE
-(22 rows)
+```sql
+mysql> select * from INFORMATION_SCHEMA.USER_ATTRIBUTES where user = 'test';
++------+-----------+------------------------------------------------+
+| USER | HOST      | ATTRIBUTE                                      |
++------+-----------+------------------------------------------------+
+| test | localhost | {"last_name": "Pretty", "first_name": "James"} |
++------+-----------+------------------------------------------------+
+1 row in set (0.00 sec)
 ```
 
 ## Задача 3
 
 <details><summary>.</summary>
 
-> Используя SQL синтаксис - наполните таблицы следующими тестовыми данными:
+> Установите профилирование `SET profiling = 1`.
+> Изучите вывод профилирования команд `SHOW PROFILES;`.
 > 
-> Таблица orders
+> Исследуйте, какой `engine` используется в таблице БД `test_db` и **приведите в ответе**.
 > 
-> |Наименование|цена|
-> |------------|----|
-> |Шоколад| 10 |
-> |Принтер| 3000 |
-> |Книга| 500 |
-> |Монитор| 7000|
-> |Гитара| 4000|
-> 
-> Таблица clients
-> 
-> |ФИО|Страна проживания|
-> |------------|----|
-> |Иванов Иван Иванович| USA |
-> |Петров Петр Петрович| Canada |
-> |Иоганн Себастьян Бах| Japan |
-> |Ронни Джеймс Дио| Russia|
-> |Ritchie Blackmore| Russia|
-> 
-> Используя SQL синтаксис:
-> - вычислите количество записей для каждой таблицы 
-> - приведите в ответе:
->     - запросы 
->     - результаты их выполнения.
+> Измените `engine` и **приведите время выполнения и запрос на изменения из профайлера в ответе**:
+> - на `MyISAM`
+> - на `InnoDB`
 
 </details>
 
-### Используя SQL синтаксис - наполните таблицы следующими тестовыми данными
+### Исследуйте, какой `engine` используется в таблице БД `test_db`
 
-`orders`
-```
-test_db=# select * from orders;
- id | наименование | цена
-----+--------------+------
-  1 | Шоколад      |   10
-  2 | Принтер      | 3000
-  3 | Книга        |  500
-  4 | Монитор      | 7000
-  5 | Гитара       | 4000
-(5 rows)
-```
-`clients`
-```
-test_db=# select * from clients;
- id |       фамилия        | страна проживания | заказ
-----+----------------------+-------------------+-------
-  1 | Иванов Иван Иванович | USA               |
-  2 | Петров Петр Петрович | Canada            |
-  3 | Иоганн Себастьян Бах | Japan             |
-  4 | Ронни Джеймс Дио     | Russia            |
-  5 | Ritchie Blackmore    | Russia            |
-(5 rows)
-```
-
-### Вычислите количество записей для каждой таблицы, приведите в ответе: запросы, результаты их выполнения.
+Используется `InnoDB`
 
 ```sql
-select count(*) from orders;
-```
-```
- count
--------
-     5
-(1 row)
-```
-```sql
-select count(*) from clients;
-```
-```
- count
--------
-     5
-(1 row)
+mysql> SELECT table_schema,table_name,engine FROM information_schema.tables WHERE table_schema = DATABASE();
++--------------+------------+--------+
+| TABLE_SCHEMA | TABLE_NAME | ENGINE |
++--------------+------------+--------+
+| test_db      | orders     | InnoDB |
++--------------+------------+--------+
+1 row in set (0.00 sec)
 ```
 
-## Задача 4
+### Измените `engine` и **приведите время выполнения и запрос на изменения из профайлера в ответе**
+
+Изменяем сначала на `MyISAM`, потом возвращаем `InnoDB`:
+```sql
+set profiling = 1;
+alter table orders engine = 'MyISAM';
+alter table orders engine = 'InnoDB';
+show profiles;
+```
+Вывод профайлера:
+```
+mysql> show profiles;
++----------+------------+--------------------------------------+
+| Query_ID | Duration   | Query                                |
++----------+------------+--------------------------------------+
+|        1 | 0.02436675 | alter table orders engine = 'MyISAM' |
+|        2 | 0.02349825 | alter table orders engine = 'InnoDB' |
+|        3 | 0.01897750 | alter table orders engine = 'MyISAM' |
+|        4 | 0.02332425 | alter table orders engine = 'InnoDB' |
+|        5 | 0.01927200 | alter table orders engine = 'MyISAM' |
+|        6 | 0.02297425 | alter table orders engine = 'InnoDB' |
+|        7 | 0.01822650 | alter table orders engine = 'MyISAM' |
+|        8 | 0.02154475 | alter table orders engine = 'InnoDB' |
++----------+------------+--------------------------------------+
+```
+Первый раз результат примерно одинаковый, потом конвертация в `MyISAM` стала проходить быстрей.
+
+## Задача 4 
 
 <details><summary>.</summary>
 
-> Часть пользователей из таблицы clients решили оформить заказы из таблицы orders.
+> Изучите файл `my.cnf` в директории /etc/mysql.
 > 
-> Используя foreign keys свяжите записи из таблиц, согласно таблице:
+> Измените его согласно ТЗ (движок InnoDB):
+> - Скорость IO важнее сохранности данных
+> - Нужна компрессия таблиц для экономии места на диске
+> - Размер буффера с незакомиченными транзакциями 1 Мб
+> - Буффер кеширования 30% от ОЗУ
+> - Размер файла логов операций 100 Мб
 > 
-> |ФИО|Заказ|
-> |------------|----|
-> |Иванов Иван Иванович| Книга |
-> |Петров Петр Петрович| Монитор |
-> |Иоганн Себастьян Бах| Гитара |
-> 
-> Приведите SQL-запросы для выполнения данных операций.
-> 
-> Приведите SQL-запрос для выдачи всех пользователей, которые совершили заказ, а также вывод данного запроса.
->  
-> Подсказк - используйте директиву `UPDATE`.
-
-</details>
-
-### Приведите SQL-запросы для выполнения данных операций.
-
-```sql
-update clients set заказ = (select id from orders where наименование = 'Книга') where фамилия = 'Иванов Иван Иванович';
-update clients set заказ = (select id from orders where наименование = 'Монитор') where фамилия = 'Петров Петр Петрович';
-update clients set заказ = (select id from orders where наименование = 'Гитара') where фамилия = 'Иоганн Себастьян Бах';
-```
-
-### Приведите SQL-запрос для выдачи всех пользователей, которые совершили заказ, а также вывод данного запроса.
-
-```sql
-select c.* from clients c join orders o on c.заказ = o.id;
-```
-```
- id |       фамилия        | страна проживания | заказ
-----+----------------------+-------------------+-------
-  1 | Иванов Иван Иванович | USA               |     3
-  2 | Петров Петр Петрович | Canada            |     4
-  3 | Иоганн Себастьян Бах | Japan             |     5
-(3 rows)
-```
-
-## Задача 5
-
-<details><summary>.</summary>
-
-> Получите полную информацию по выполнению запроса выдачи всех пользователей из задачи 4 
-> (используя директиву EXPLAIN).
-> 
-> Приведите получившийся результат и объясните что значат полученные значения.
+> Приведите в ответе измененный файл `my.cnf`.
 
 </details>
 
 ```sql
-test_db=# explain select c.* from clients c join orders o on c.заказ = o.id;
-                              QUERY PLAN
------------------------------------------------------------------------
- Hash Join  (cost=15.18..26.70 rows=120 width=644)
-   Hash Cond: (c."заказ" = o.id)
-   ->  Seq Scan on clients c  (cost=0.00..11.20 rows=120 width=644)
-   ->  Hash  (cost=12.30..12.30 rows=230 width=4)
-         ->  Seq Scan on orders o  (cost=0.00..12.30 rows=230 width=4)
-(5 rows)
+[mysqld]
+pid-file        = /var/run/mysqld/mysqld.pid
+socket          = /var/run/mysqld/mysqld.sock
+datadir         = /var/lib/mysql
+secure-file-priv= NULL
+
+# Custom config should go here
+!includedir /etc/mysql/conf.d/
+
+
+innodb_flush_log_at_trx_commit = 2
+innodb_file_per_table = ON
+innodb_log_buffer_size = 1048576
+innodb_buffer_pool_size = 1688207360
+innodb_log_file_size = 104857600
 ```
-1. Сначала будет полностью построчно прочитана таблица `orders` 
-2. Для неё будет создан хэш по полю `id`
-3. После будет прочитана таблица `clients`, 
-4. Для каждой строки по полю `заказ` будет проверено, соответствует ли она чему-то в кеше `orders`
-   - Если ничему не соответствует - строка будет пропущена
-   - Если соответствует, то на основе этой строки и всех подходящих строках хеша СУБД сформирует вывод 
-
-При запуске просто `explain`, Postgres напишет только примерный план выполнения запроса и для каждой операции предположит:
-- сколько роцессорного времени уйдёт на поиск первой записи и сбор всей выборки: `cost`=`первая_запись`..`вся_выборка`
-- сколько примерно будет строк: `rows`
-- какой будет средняя длина строки в байтах: `width`
-
-Postgres делает предположения на основе статистики, которую собирает периодический выполня `analyze` запросы на выборку данных из служебных таблиц.  
-
-Если запустить `explain analyze`, то запрос будет выполнен и к плану добавятся уже точные данные по времени и объёму данных.
-
-`explain verbose` и `explain analyze verbose` то для каждой операции выборки будут написаны поля таблиц, которые в выборку попали.
-
-## Задача 6
-
-<details><summary>.</summary>
-
-> Создайте бэкап БД test_db и поместите его в volume, предназначенный для бэкапов (см. Задачу 1).
-> 
-> Остановите контейнер с PostgreSQL (но не удаляйте volumes).
-> 
-> Поднимите новый пустой контейнер с PostgreSQL.
-> 
-> Восстановите БД test_db в новом контейнере.
-> 
-> Приведите список операций, который вы применяли для бэкапа данных и восстановления. 
-
-</details>
-
-### Приведите список операций, который вы применяли для бэкапа данных и восстановления. 
-
-1. Создайте бэкап БД test_db и поместите его в volume, предназначенный для бэкапов (см. Задачу 1).
-
-   ```bash
-   export PGPASSWORD=netology && pg_dumpall -h localhost -U test-admin-user > /media/postgresql/backup/all_$(date --iso-8601=m | sed 's/://g; s/+/z/g').sql
-   ```
-
-2. Остановите контейнер с PostgreSQL (но не удаляйте volumes).
-
-   ```bash 
-   $ docker-compose stop
-   Stopping psql ... done
-   $ docker ps -a
-   CONTAINER ID   IMAGE         COMMAND                  CREATED         STATUS                     PORTS     NAMES
-   213107257ce9   postgres:12   "docker-entrypoint.s…"   4 minutes ago   Exited (0) 2 seconds ago             psql
-   ```
-
-3. Поднимите новый пустой контейнер с PostgreSQL.
-
-   ```bash
-   docker run --rm -d -e POSTGRES_USER=test-admin-user -e POSTGRES_PASSWORD=netology -e POSTGRES_DB=test_db -v psql_backup:/media/postgresql/backup --name psql2 postgres:12
-   ```
-   ```bash
-   CONTAINER ID   IMAGE         COMMAND                  CREATED          STATUS                     PORTS      NAMES
-   cf2c8f875948   postgres:12   "docker-entrypoint.s…"   4 minutes ago    Up 4 minutes               5432/tcp   psql2
-   213107257ce9   postgres:12   "docker-entrypoint.s…"   14 minutes ago   Exited (0) 5 minutes ago              psql
-   ```
-
-4. Восстановите БД test_db в новом контейнере.
-
-   ```bash
-   docker exec -it psql2  bash
-   export PGPASSWORD=netology && psql -h localhost -U test-admin-user -f $(ls -1trh /media/postgresql/backup/all_*.sql) test_db
-   ```
