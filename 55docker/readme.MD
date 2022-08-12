@@ -52,11 +52,11 @@ L2 VPN сеть для связи демонов Docker между собой. �
 [root@node01 ~]# docker node ls
 ID                            HOSTNAME             STATUS    AVAILABILITY   MANAGER STATUS   ENGINE VERSION
 q7ybewzhnlt4g8i4q2hgsme16 *   node01.netology.yc   Ready     Active         Leader           20.10.12
-rjgo07uaqsffxaduqgogexh4y     node02.netology.yc   Ready     Active         Reachable        20.10.12
+rjgo07uaqsffxaduqgogexh4h     node02.netology.yc   Ready     Active         Reachable        20.10.12
 hnvx6ug830f6q2orbt21wl536     node03.netology.yc   Ready     Active         Reachable        20.10.12
 yvksdjnnhdz7m918gjodmime5     node04.netology.yc   Ready     Active                          20.10.12
-1actkrhyg3s1gaboy6ibf1wv6     node05.netology.yc   Ready     Active                          20.10.12
-vovxqnougcs1d37cui2vv1bs6     node06.netology.yc   Ready     Active                          20.10.12
+1actkrhyg3s1gaboy6ibf1wt6     node05.netology.yc   Ready     Active                          20.10.12
+vovxqnougcs1d37cui2vv1bs3     node06.netology.yc   Ready     Active                          20.10.12
 ```
 
 ## Задача 3
@@ -86,30 +86,3 @@ fanirldjts6j   swarm_monitoring_prometheus         replicated   1/1        stefa
 lp5ti1ot5ea2   swarm_monitoring_unsee              replicated   1/1        cloudflare/unsee:v0.8.0 
 ```
 
-## Задача 4 (*)
-
-<details>
-<summary>.</summary>
-
-> Выполнить на лидере Docker Swarm кластера команду (указанную ниже) и дать письменное описание её функционала, что она делает и зачем она нужна:
-> ```
-> # см.документацию: https://docs.docker.com/engine/swarm/swarm_manager_locking/
-> docker swarm update --autolock=true
-> ```
-
-</details>
-
-```bash
-[root@node03 ~]# docker node ls
-Error response from daemon: Swarm is encrypted and needs to be unlocked before it can be used. Please use "docker swarm unlock" to unlock it.
-[root@node03 ~]# docker swarm unlock
-Please enter unlock key: 
-[root@node03 ~]# docker node ls
-ID                            HOSTNAME             STATUS    AVAILABILITY   MANAGER STATUS   ENGINE VERSION
-q7ybewzhnlt4g8i4q2hgsme16     node01.netology.yc   Ready     Active         Leader           20.10.11
-...
-```
-
-`--autolock=true` (или `init --autolock` при создании кластера) заставит вводить ключ разблокировки на `manager` ноде, чтобы она могла заново присоединиться к кластеру, если была перезапущена. Ввод ключа позволит расшифровать лог Raft и загрузить все "секреты" в память ноды (логины, пароли, TLS ключи, SSH ключи и [прочие данные](https://docs.docker.com/engine/swarm/secrets/#about-secrets))
-
-Верояно, это нужно чтобы защитить кластер от несанкционированного доступа к файлам ноды. Например, если кто-то получил жесткий диск сервера или образ диска виртуальной машины с нодой, чтобы он не мог получить доступ к кластеру и нодам без пароля (=токена, ключа).
