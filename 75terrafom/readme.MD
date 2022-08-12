@@ -1,13 +1,6 @@
 
 # Домашнее задание к занятию "7.5. Основы golang"
 
-<details><summary>.</summary>
-
-> С `golang` в рамках курса, мы будем работать не много, поэтому можно использовать любой IDE. 
-> Но рекомендуем ознакомиться с [GoLand](https://www.jetbrains.com/ru-ru/go/).
-
-</details>  
-
 ## Задача 1. Установите golang.
 
 <details><summary>.</summary>
@@ -133,60 +126,3 @@ func main() {
 }
 ```
 
-## Задача 4. Протестировать код (не обязательно).
-
-<details><summary>.</summary>
-
-> Создайте тесты для функций из предыдущего задания. 
-
-</details>
-
-### Тест для программы, переводящей метры в футы
-
-```go
-package main
-
-import "testing"
-
-func TestMain(t *testing.T) {
-	var v float64
-	v = MtoF(8)
-	if v != 26.248 {
-		t.Error("Expected 26.248, got ", v)
-	}
-}
-```
-
-### Тест для программы поиска минимального числа из списка
-
-```go
-package main
-
-import "testing"
-
-func TestMain(t *testing.T) {
-	var v int
-	v = GetMin([]int{112,56,78,90})
-	if v != 56 {
-		t.Error("Expected 56, got ", v)
-	}
-}
-```
-
-### Тест для программы поиска чисел, делимых на три, в диапазоне от 1 до 100
-
-```go
-package main
-
-import "fmt"
-import "testing"
-
-func TestMain(t *testing.T) {
-	var v []int
-	v = FilterList()
-	if v[4] != 15 || v[18] != 57 {
-		s := fmt.Sprintf("Expected values 15 and 57, got %v and %v", v[4], v[18])
-		t.Error(s)
-	}
-}
-```
