@@ -45,7 +45,7 @@ devops-netology
 
 ### Какая максимальная длина имени? 
 
-Она описана в [этом блоке](https://github.com/hashicorp/terraform-provider-aws/blob/8ed579596823be7604461c75ad564c83bf3b6c69/internal/service/sqs/queue.go#L424) и не может превышать [80 символов](https://github.com/hashicorp/terraform-provider-aws/blob/8ed579596823be7604461c75ad564c83bf3b6c69/internal/service/sqs/queue.go#L427). Если это FIFO очередь, [то 75 символов](https://github.com/hashicorp/terraform-provider-aws/blob/8ed579596823be7604461c75ad564c83bf3b6c69/internal/service/sqs/queue.go#L425), плюс "расширение" `.fifo` в конце, это 5 символов. В сумме тоже 80.
+Она описана в [этом блоке](https://github.com/hashicorp/terraform-provider-aws/blob/8ed579596823be7604461c75ad564c83bf3b6c69/internal/service/sqs/queue.go#L424) и не может превышать [80 символов](https://github.com/hashicorp/terraform-provider-aws/blob/8ed579596823be7604461c75ad564c83bf3b6c69/internal/service/sqs/queue.go#L427).
 
 ### Какому регулярному выражению должно подчиняться имя? 
 
