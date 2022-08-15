@@ -48,7 +48,7 @@ Anywhere on lo             ALLOW IN    Anywhere
 22 (v6)                    ALLOW IN    Anywhere (v6)             
 443 (v6)                   ALLOW IN    Anywhere (v6) 
 ```
-- Процесс установки и выпуска сертификата с помощью hashicorp vault
+- Процесс установки и выпуска сертификата с помощью hashicorp vault  
 для доступа использую vps
 ```bash
 $ curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add -                                  #устанавливаем hashicorp vault
@@ -122,9 +122,10 @@ server {
         ssl_ciphers         HIGH:!aNULL:!MD5;
 ```
 - Страница сервера nginx в браузере хоста не содержит предупреждений 
-![site](pics/pic_1.jpg)
+![site](pics/1.jpg)
 
-- Скрипт генерации нового сертификата работает (сертификат сервера ngnix должен быть "зеленым")
+- Скрипт генерации нового сертификата работает 
+
 Скрипт генерации сертификата для nginx
 ```bash
 $ sudo vi ~/script.sh
